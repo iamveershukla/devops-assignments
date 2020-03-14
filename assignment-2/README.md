@@ -8,3 +8,6 @@ Download test.json file from google drive and send one slack message with all th
 * Write ansible playbook with message and slack roles.
 * 1. message role downloads file, parses json content and then sets appropriate message to be used by slack role.
 * 2. slack role reads message from variables and sends message.
+
+# running
+* 1. ansible-playbook playbooks/main.yml

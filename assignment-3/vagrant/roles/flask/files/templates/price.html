@@ -1,0 +1,26 @@
+{% include "header.html" %}
+
+{% block body %}
+<div class="container">
+            <table class="table table-striped">
+
+               <tr>
+                  <th>ID</th>
+                  <th>Name</th>
+                  <th>Price</th>
+               </tr>
+
+                {% for row in prices %}
+                    <tr>
+                        <td>{{row.0}}</td>
+                        <td>{{row.1}}</td>
+                        <td>{{row.2}}</td>
+                    </tr>
+
+                    <div id="modaledit{{row.0}}" class="modal fade" role="dialog">
+                {% endfor %}
+    </div>
+</div>
+{% endblock %}
+
+{% include "footer.html" %}

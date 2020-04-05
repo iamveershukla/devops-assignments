@@ -1,0 +1,39 @@
+---
+
+- name: update mysql root password for all root accounts
+  mysql_user: 
+    name: "{{ db_user }}" 
+    host: "{{ item }}" 
+    password: "{{ db_password }}"
+    login_user: "{{ db_user }}"
+    login_password: "{{ db_password }}"
+    check_implicit_admin: yes
+    priv: "*.*:ALL,GRANT"
+  with_items:
+    - "{{ ansible_hostname }}"
+    - 127.0.0.1
+    - 192.168.200.1
+    - 192.168.200.10
+
+- name: Create a new database with name 'webapp'
+  mysql_db:
+    name: webapp
+    state: present
+    login_user: "{{ db_user }}"
+    login_password: "{{ db_password }}"
+  register: db_created
+
+- name: Copy SQL Dump
+  copy: >
+    src=crud.sql
+    dest="/tmp/crud.sql"
+    mode=755
+
+- name: Import database
+  mysql_db:
+    state: import
+    name: webapp
+    target: "/tmp/crud.sql"
+    login_user: "{{ db_user }}"
+    login_password: "{{ db_password }}"
+  when: db_created.changed

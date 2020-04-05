@@ -1,0 +1,59 @@
+---
+
+- name: Webapp | Installing Webapp
+  apt:
+    name: ['python-pip', 'python-apt', 'python-virtualenv', 'python-dev', 'libffi-dev', 'libssl-dev', 'build-essential', 'curl']
+    state: latest
+    update_cache: yes
+
+- name: Installing Flask and pymysql
+  pip:
+    executable: /usr/bin/pip
+    name: ['flask', 'pymysql']
+
+- name: install supervisor
+  apt: >
+    name=supervisor
+    update_cache=yes
+    cache_valid_time=300
+    state=present
+
+- name: ensure supervisor is running
+ 
+  service: name=supervisor state=started enabled=yes
+
+- name: Install supervisor configuration
+  template: >
+    src=templates/flask_supervisor.conf.j2
+    dest=/etc/supervisor/conf.d/flask_supervisor.conf
+  notify: reload supervisor config
+
+- name: Setup Service Directories
+  file: >
+    state=directory
+    path="{{ item }}"
+    mode=755
+  with_items:
+      - /opt/app
+      - /opt/app/templates
+      - /etc/app
+      - /var/log/app
+
+- name: Copy Flask App
+  copy: 
+    src : app/
+    dest: "{{ app.install_dir }}"
+
+- name: Copy Flask templates
+  copy: 
+    src : templates/
+    dest: "{{ app.install_dir }}/templates/"
+
+- name: Copy Flask Static files
+  copy: 
+    src : static/
+    dest: "{{ app.install_dir }}/static/"
+  
+- name : Deploy Flask App
+  command: chmod 755 "{{ app.install_dir }}/flask_app.py"
+  notify: restart flask app

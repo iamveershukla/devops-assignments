@@ -1,0 +1,23 @@
+
+---
+
+- hosts: lb
+  roles:
+    - nginx
+  become: yes
+  become_method: sudo
+
+- hosts: app
+  roles:
+    - flask
+  become: yes
+  become_method: sudo
+
+- hosts: db
+  vars:
+    ansible_python_interpreter: python3
+  roles:
+    - ansible-role-mysql-master
+    - mysql
+  become: yes
+  become_method: sudo

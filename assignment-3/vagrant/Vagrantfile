@@ -1,0 +1,99 @@
+# -*- mode: ruby -*-
+# vi:set ft=ruby sw=2 ts=2 sts=2:
+
+# Define the number of LB, app and db nodes
+# If this number is changed, remember to update setup-hosts.sh script with the new hosts IP details in /etc/hosts of each VM.
+
+NUM_APP_NODE = 2
+
+LB_IP = "192.168.100.10"
+
+# Provision multiple application servers using (APP_IP_START + 1) and (APP_IP_START + 2)
+APP_IP_NW = "192.168.150."
+APP_IP_START = 9
+
+DB_IP = "192.168.200.10"
+
+
+# All Vagrant configuration is done below. The "2" in Vagrant.configure
+# configures the configuration version (we support older styles for
+# backwards compatibility). Please don't change it unless you know what
+# you're doing.
+Vagrant.configure("2") do |config|
+
+  config.vm.box = "ubuntu/bionic64"
+
+  config.vm.box_check_update = false
+
+  # Provision Database Node
+  config.vm.define "db" do |node|
+    node.vm.provider "virtualbox" do |vb|
+        vb.name = "db"
+        vb.memory = 2048
+        vb.cpus = 2
+    end
+    node.vm.hostname = "db"
+    node.vm.network :private_network, ip: DB_IP
+	node.vm.network "forwarded_port", guest: 22, host: 2730
+
+    node.vm.provision "setup-hosts", :type => "shell", :path => "ubuntu/vagrant/setup-hosts.sh" do |s|
+      s.args = ["enp0s8"]
+    end
+
+    node.vm.provision "setup-dns", type: "shell", :path => "ubuntu/update-dns.sh"
+
+  end
+
+  # Provision App Nodes
+  (1..NUM_APP_NODE).each do |i|
+      config.vm.define "app#{i}" do |node|
+        # Name shown in the GUI
+        node.vm.provider "virtualbox" do |vb|
+            vb.name = "app#{i}"
+            vb.memory = 2048
+            vb.cpus = 2
+        end
+        node.vm.hostname = "app#{i}"
+        node.vm.network :private_network, ip: APP_IP_NW + "#{APP_IP_START + i}"
+        node.vm.network "forwarded_port", guest: 22, host: "#{2720 + i}"
+
+        node.vm.provision "setup-hosts", :type => "shell", :path => "ubuntu/vagrant/setup-hosts.sh" do |s|
+          s.args = ["enp0s8"]
+        end
+
+        node.vm.provision "setup-dns", type: "shell", :path => "ubuntu/update-dns.sh"
+
+      end
+  end
+
+  # Provision Load Balancer Node
+  config.vm.define "lb" do |node|
+    node.vm.provider "virtualbox" do |vb|
+        vb.name = "lb"
+        vb.memory = 1024
+        vb.cpus = 1
+    end
+    node.vm.hostname = "lb"
+    node.vm.network :private_network, ip: LB_IP
+	  node.vm.network "forwarded_port", guest: 22, host: 2710
+    node.vm.network "forwarded_port", guest: 80, host: 2080
+
+    node.vm.provision "setup-hosts", :type => "shell", :path => "ubuntu/vagrant/setup-hosts.sh" do |s|
+      s.args = ["enp0s8"]
+    end
+
+    node.vm.provision "setup-dns", type: "shell", :path => "ubuntu/update-dns.sh"
+
+  end
+
+  config.vm.provision "ansible" do |ansible|
+    ansible.verbose = "v"
+    ansible.playbook = "playbook.yaml"
+    ansible.groups = {
+      "lb" => ["lb"],
+      "app" => ["app[1:2]"],
+      "db" => ["db"]
+    }
+  end
+  
+end

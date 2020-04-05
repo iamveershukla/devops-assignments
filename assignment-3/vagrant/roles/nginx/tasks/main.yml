@@ -1,0 +1,27 @@
+---
+
+- name: Installing NGINX
+  apt:
+    name: nginx
+    state: latest
+    update_cache: yes
+
+- name: Starting NGINX
+  service:
+    name: nginx
+    state: started
+
+- name: Create nginx conf.d directory
+  file:
+    path: "/etc/nginx/conf.d"
+    state: directory
+    recurse: yes
+
+- name: copy .conf files in /etc/nginx/conf.d/ directory
+  template:
+    src: "conf.d/{{item}}.conf"
+    dest: "/etc/nginx/conf.d/{{item}}.conf"
+  with_items:
+    - "app"
+    - "app_cluster_dev"
+  notify: restart nginx

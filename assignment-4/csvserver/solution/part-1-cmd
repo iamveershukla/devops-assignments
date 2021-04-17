@@ -1,0 +1,1 @@
+docker run -itd -p 9393:9300 -e CSVSERVER_BORDER=Orange -v /Users/veerbahadur/Labs/devops-assignments/assignment-4/csvserver/inputFile:/csvserver/inputdata infracloudio/csvserver
